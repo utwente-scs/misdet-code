@@ -1,6 +1,7 @@
 import subprocess
 import os
 import json
+import sys
 
 import pandas as pd
 import time
@@ -52,24 +53,43 @@ def retrieve_iam_policies():
             df.at[index, 'AttachedGroups'] = attached_entities['PolicyUsers']
             df.at[index, 'AttachedRoles'] = attached_entities['PolicyRoles']
 
-    # TODO set output to output to a directory instead of the root
     # Transform the dataframe to a csv file and save it
-    df.to_csv(outdir + '/iam_policy_data_' + time.strftime("%Y-%m-%d") + '.csv', index=False)
+    df.to_csv(outdir + '/iam_policy_data_' + time.strftime("%Y-%m-%d") + '_' + time.strftime("%H:%M") + '.csv',
+              index=False)
 
 
-def cycle_timer():
-    # TODO add timer functionality such that the policy retrieval can be performed each x days
-    return
+def timer(hours):
+    while True:
+        print('Data retrieval in progress....')
+        retrieve_iam_policies()
+        print('--------------------------------------------------')
+        print('Data retrieval successful')
+        print('CSV file saved in:')
+        print(os.getcwd() + '/output')
+        print('--------------------------------------------------')
+        print('Next collection in ' + sys.argv[1] + ' hours')
+        print('Do not terminate this program')
+        print('--------------------------------------------------')
+
+        # Convert hours to seconds and start sleep
+        time.sleep(int(hours) * 3600)
 
 
 if __name__ == '__main__':
     print('--------------------------------------------------')
     print('Starting data retrieval from the AWS environment')
     print('--------------------------------------------------')
-    print('Data retrieval in progress....')
-    retrieve_iam_policies()
-    print('--------------------------------------------------')
-    print('Data retrieval successful')
-    print('CSV file saved in:')
-    print(os.getcwd() + '/output')
+
+    # If an argument is passed for the frequency start the timer, otherwise single shot collection
+    if len(sys.argv) == 2:
+        timer(sys.argv[1])
+
+    else:
+        retrieve_iam_policies()
+        print('Data retrieval in progress....')
+        print('--------------------------------------------------')
+        print('Data retrieval successful')
+        print('CSV file saved in:')
+        print(os.getcwd() + '/output')
+
     print('--------------------------------------------------')
