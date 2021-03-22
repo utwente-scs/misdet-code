@@ -9,7 +9,7 @@ import time
 
 # Run a CLI command to list all the IAM policies in the environment
 def retrieve_iam_policies():
-    policies = subprocess.check_output('awslocal iam list-policies', shell=True)
+    policies = subprocess.check_output('aws iam list-policies', shell=True)
 
     json_policies = json.loads(policies)
 
@@ -21,7 +21,7 @@ def retrieve_iam_policies():
     # Loop through the list of collected policy names and retrieve the actual policy document
     for index, row in df_policies.iterrows():
         policy_object = subprocess.check_output(
-            'awslocal iam get-policy-version --policy-arn ' + row.Arn + ' --version-id ' + row.DefaultVersionId,
+            'aws iam get-policy-version --policy-arn ' + row.Arn + ' --version-id ' + row.DefaultVersionId,
             shell=True)
         json_policy_object = json.loads(policy_object)
 
@@ -44,7 +44,7 @@ def retrieve_iam_policies():
         # If the policy is attached to entities, retrieve those entities and add it to the list
         if row.AttachmentCount > 0:
             attached_entities = json.loads(
-                subprocess.check_output('awslocal iam list-entities-for-policy --policy-arn ' + row.Arn, shell=True))
+                subprocess.check_output('aws iam list-entities-for-policy --policy-arn ' + row.Arn, shell=True))
             df_policies.at[index, 'AttachedUsers'] = attached_entities['PolicyGroups']
             df_policies.at[index, 'AttachedGroups'] = attached_entities['PolicyUsers']
             df_policies.at[index, 'AttachedRoles'] = attached_entities['PolicyRoles']
@@ -55,7 +55,7 @@ def retrieve_iam_policies():
 # Retrieve all the users and the policies that are attached to them in the environment
 def retrieve_users():
     # Run a CLI command to retrieve all the users in the environment and convert the output the JSON
-    json_users = json.loads(subprocess.check_output('awslocal iam list-users', shell=True))
+    json_users = json.loads(subprocess.check_output('aws iam list-users', shell=True))
 
     # Create a new dataframe to hold the users and retrieve the attached policies
     df_users = pd.json_normalize(json_users['Users'])
@@ -63,7 +63,7 @@ def retrieve_users():
 
     for index, row in df_users.iterrows():
         attached_user_policies = json.loads(
-            subprocess.check_output('awslocal iam list-attached-user-policies --user-name ' + row.UserName, shell=True))
+            subprocess.check_output('aws iam list-attached-user-policies --user-name ' + row.UserName, shell=True))
         df_users.at[index, 'AttachedPolicies'] = attached_user_policies['AttachedPolicies']
 
     return df_users
@@ -71,7 +71,7 @@ def retrieve_users():
 
 # Run a CLI command to retrieve all the groups in the environment and the attached policies
 def retrieve_groups():
-    json_groups = json.loads(subprocess.check_output('awslocal iam list-groups', shell=True))
+    json_groups = json.loads(subprocess.check_output('aws iam list-groups', shell=True))
 
     # Create a new dataframe to hold the group data, attached policies, and the users that are part of the group
     df_groups = pd.json_normalize(json_groups['Groups'])
@@ -80,11 +80,11 @@ def retrieve_groups():
 
     for index, row in df_groups.iterrows():
         attached_group_policies = json.loads(
-            subprocess.check_output('awslocal iam list-attached-group-policies --group-name ' + row.GroupName,
+            subprocess.check_output('aws iam list-attached-group-policies --group-name ' + row.GroupName,
                                     shell=True))
         df_groups.at[index, 'AttachedPolicies'] = attached_group_policies['AttachedPolicies']
         users_in_group = \
-            json.loads(subprocess.check_output('awslocal iam get-group --group-name ' + row.GroupName, shell=True))[
+            json.loads(subprocess.check_output('aws iam get-group --group-name ' + row.GroupName, shell=True))[
                 'Users']
         df_groups.at[index, 'Users'] = users_in_group
 
@@ -93,14 +93,14 @@ def retrieve_groups():
 
 # Run a CLI command to retrieve all the roles in the environment and the attached policies
 def retrieve_roles():
-    json_roles = json.loads(subprocess.check_output('awslocal iam list-roles', shell=True))
+    json_roles = json.loads(subprocess.check_output('aws iam list-roles', shell=True))
 
     df_roles = pd.json_normalize(json_roles['Roles'])
     df_roles['AttachedPolicies'] = '-'
 
     for index, row in df_roles.iterrows():
         attached_roles_policies = json.loads(
-            subprocess.check_output('awslocal iam list-attached-role-policies --role-name ' + row.RoleName, shell=True))
+            subprocess.check_output('aws iam list-attached-role-policies --role-name ' + row.RoleName, shell=True))
         df_roles.at[index, 'AttachedPolicies'] = attached_roles_policies['AttachedPolicies']
 
     return df_roles
