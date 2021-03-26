@@ -5,6 +5,7 @@ import sys
 
 import pandas as pd
 import time
+from hashlib import sha256
 
 
 # Run a CLI command to list all the IAM policies in the environment
@@ -66,6 +67,11 @@ def retrieve_users():
             subprocess.check_output('aws iam list-attached-user-policies --user-name ' + row.UserName, shell=True))
         df_users.at[index, 'AttachedPolicies'] = attached_user_policies['AttachedPolicies']
 
+        # Cryptographically hash identifiable data for some level of anonymization
+        df_users.at[index, 'UserName'] = sha256(row.UserName.encode('utf-8')).hexdigest()
+        df_users.at[index, 'UserId'] = sha256(row.UserId.encode('utf-8')).hexdigest()
+        df_users.at[index, 'Arn'] = sha256(row.Arn.encode('utf-8')).hexdigest()
+
     return df_users
 
 
@@ -79,14 +85,34 @@ def retrieve_groups():
     df_groups['Users'] = '-'
 
     for index, row in df_groups.iterrows():
+
+        # Retrieve the attached policies to the group
         attached_group_policies = json.loads(
             subprocess.check_output('aws iam list-attached-group-policies --group-name ' + row.GroupName,
                                     shell=True))
+
+        # Retrieve the users that are part of the group
         df_groups.at[index, 'AttachedPolicies'] = attached_group_policies['AttachedPolicies']
         users_in_group = \
             json.loads(subprocess.check_output('aws iam get-group --group-name ' + row.GroupName, shell=True))[
                 'Users']
-        df_groups.at[index, 'Users'] = users_in_group
+
+        # Cryptographically hash the users in the group for anonymization
+        anonymized_users = []
+        for user in users_in_group:
+            user_dict = {
+                'UserName': sha256(user['UserName'].encode('utf-8')).hexdigest(),
+                'UserId': sha256(user['UserId'].encode('utf-8')).hexdigest(),
+                'Arn': sha256(user['Arn'].encode('utf-8')).hexdigest()
+            }
+            anonymized_users.append(user_dict)
+
+        df_groups.at[index, 'Users'] = anonymized_users
+
+        # Cryptographically hash identifiable data for some level of anonymization
+        df_groups.at[index, 'GroupName'] = sha256(row.GroupName.encode('utf-8')).hexdigest()
+        df_groups.at[index, 'GroupId'] = sha256(row.GroupId.encode('utf-8')).hexdigest()
+        df_groups.at[index, 'Arn'] = sha256(row.Arn.encode('utf-8')).hexdigest()
 
     return df_groups
 
@@ -99,9 +125,16 @@ def retrieve_roles():
     df_roles['AttachedPolicies'] = '-'
 
     for index, row in df_roles.iterrows():
+
+        # Retrieve the attached role policies
         attached_roles_policies = json.loads(
             subprocess.check_output('aws iam list-attached-role-policies --role-name ' + row.RoleName, shell=True))
         df_roles.at[index, 'AttachedPolicies'] = attached_roles_policies['AttachedPolicies']
+
+        # Cryptographically hash identifiable data for some level of anonymization
+        df_roles.at[index, 'RoleName'] = sha256(row.RoleName.encode('utf-8')).hexdigest()
+        df_roles.at[index, 'RoleId'] = sha256(row.RoleId.encode('utf-8')).hexdigest()
+        df_roles.at[index, 'Arn'] = sha256(row.Arn.encode('utf-8')).hexdigest()
 
     return df_roles
 
@@ -142,7 +175,7 @@ def timer(hours):
         print('CSV file saved in:')
         print(os.getcwd() + '/output')
         print('--------------------------------------------------')
-        print('Next collection in ' + sys.argv[1] + ' hours')
+        print('Next collection in ' + hours + ' hours')
         print('Do not terminate this program')
         print('--------------------------------------------------')
 
