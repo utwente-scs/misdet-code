@@ -41,7 +41,10 @@ And the entities attached to the policies which can be one of the following:
 
 This data will be used to model the policies and the development of the detection system.
 
-TODO: Look at anonymizing the data.
+### Anonymization
+
+All personally identifiable data is being anonymized before it is saved in the export. More specifically, all the data
+in regard to users, groups, and roles is cryptographically hashed using SHA256. 
 
 ## Requirements
 
