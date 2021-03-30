@@ -149,7 +149,6 @@ def file_exporter(policies, users, groups, roles):
     with pd.ExcelWriter(
             outdir + '/iam_policy_data_' + time.strftime("%Y-%m-%d") + '_' + time.strftime(
                 "%H:%M") + '.xlsx') as writer:
-        # policies.to_excel(writer, sheet_name="policies")
         policies.to_excel(writer, sheet_name="policies")
         users.to_excel(writer, sheet_name="users")
         groups.to_excel(writer, sheet_name="groups")

@@ -44,7 +44,9 @@ This data will be used to model the policies and the development of the detectio
 ### Anonymization
 
 All personally identifiable data is being anonymized before it is saved in the export. More specifically, all the data
-in regard to users, groups, and roles is cryptographically hashed using SHA256. 
+in regard to users, groups, and roles is cryptographically hashed using SHA256.
+
+An example of the excel export of collected data can be found in the [example directory ](Example) of this repository.
 
 ## Requirements
 
