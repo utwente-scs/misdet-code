@@ -17,7 +17,8 @@ def retrieve_iam_policies():
     # Load the IAM policies into a pandas dataframe
     df_policies = pd.json_normalize(json_policies['Policies'])
 
-    collected_policies = []
+# Create new column in the dataframe for the policy object
+    df_policies['PolicyObject'] = ''
 
     # Loop through the list of collected policy names and retrieve the actual policy document
     for index, row in df_policies.iterrows():
@@ -26,29 +27,8 @@ def retrieve_iam_policies():
             shell=True)
         json_policy_object = json.loads(policy_object)
 
-        # Only take the statement part of the policy
-        collected_policies.append(json_policy_object['PolicyVersion']['Document']['Statement'])
-
-    # Append the retrieved policies as a new column to the dataframe
-    df_policies['PolicyObject'] = collected_policies
-
-    # In AWS policies need to be attached to an entity (users, groups and roles) before they can be used
-    # Here we will retrieve entities to which the policy is attached and add it to the dataframe
-    # (only applies for managed policies)
-
-    # Create new columns in the dataframe for the attached entities and set default value to '-'
-    df_policies['AttachedUsers'] = '-'
-    df_policies['AttachedGroups'] = '-'
-    df_policies['AttachedRoles'] = '-'
-
-    for index, row in df_policies.iterrows():
-        # If the policy is attached to entities, retrieve those entities and add it to the list
-        if row.AttachmentCount > 0:
-            attached_entities = json.loads(
-                subprocess.check_output('aws iam list-entities-for-policy --policy-arn ' + row.Arn, shell=True))
-            df_policies.at[index, 'AttachedUsers'] = attached_entities['PolicyGroups']
-            df_policies.at[index, 'AttachedGroups'] = attached_entities['PolicyUsers']
-            df_policies.at[index, 'AttachedRoles'] = attached_entities['PolicyRoles']
+        # Only take the statement part of the policy and add to dataframe
+        df_policies.at[index, 'PolicyObject'] = json_policy_object['PolicyVersion']['Document']['Statement']
 
     return df_policies
 
@@ -125,7 +105,6 @@ def retrieve_roles():
     df_roles['AttachedPolicies'] = '-'
 
     for index, row in df_roles.iterrows():
-
         # Retrieve the attached role policies
         attached_roles_policies = json.loads(
             subprocess.check_output('aws iam list-attached-role-policies --role-name ' + row.RoleName, shell=True))
