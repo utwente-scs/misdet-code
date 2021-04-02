@@ -17,7 +17,7 @@ def retrieve_iam_policies():
     # Load the IAM policies into a pandas dataframe
     df_policies = pd.json_normalize(json_policies['Policies'])
 
-# Create new column in the dataframe for the policy object
+    # Create new column in the dataframe for the policy object
     df_policies['PolicyObject'] = ''
 
     # Loop through the list of collected policy names and retrieve the actual policy document
@@ -26,9 +26,15 @@ def retrieve_iam_policies():
             'aws iam get-policy-version --policy-arn ' + row.Arn + ' --version-id ' + row.DefaultVersionId,
             shell=True)
         json_policy_object = json.loads(policy_object)
+        policy_statement = json_policy_object['PolicyVersion']['Document']['Statement']
+
+        # Check whether the policy object fits in an excel cell, if not split it.
+        if len(str(policy_statement)) > 32767:
+            df_policies.at[index, 'PolicyObject'] = str(policy_statement)[:32767]
+            df_policies.at[index, 'ExtraPolicySpace'] = str(policy_statement)[32767:]
 
         # Only take the statement part of the policy and add to dataframe
-        df_policies.at[index, 'PolicyObject'] = json_policy_object['PolicyVersion']['Document']['Statement']
+        df_policies.at[index, 'PolicyObject'] = policy_statement
 
     return df_policies
 
