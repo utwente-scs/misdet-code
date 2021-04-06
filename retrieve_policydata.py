@@ -16,6 +16,8 @@ def retrieve_iam_policies():
 
     # Load the IAM policies into a pandas dataframe
     df_policies = pd.json_normalize(json_policies['Policies'])
+    print('Found: ' + str(df_policies.shape[0]) + ' policies')
+    print('Starting individual policy object retrieval (may take a while)')
 
     # Create new column in the dataframe for the policy object
     df_policies['PolicyObject'] = ''
@@ -142,10 +144,22 @@ def file_exporter(policies, users, groups, roles):
 
 # Simple method to bundle the data collection methods and return the needed dataframes
 def data_collector():
+    print('Collecting policy data...')
     policies = retrieve_iam_policies()
+    print('Finished policy retrieval')
+    print('-------------------------')
+    print('Collecting user data...')
     users = retrieve_users()
+    print('Finished user retrieval')
+    print('-------------------------')
+    print('Collecting group data...')
     groups = retrieve_groups()
+    print('Finished group retrieval')
+    print('-------------------------')
+    print('Collecting role data...')
     roles = retrieve_roles()
+    print('Finished role retrieval')
+
 
     file_exporter(policies, users, groups, roles)
 
