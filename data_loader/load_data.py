@@ -60,12 +60,6 @@ def create_resource_nodes(gr, policies):
                         tmp = [resource_list]
                         resource_list = tmp
 
-                    # if type(resource_list) is str:
-                    #     tx.evaluate('''
-                    #             MERGE (resource:Resource {name: $name, forPolicy: $policy})
-                    #             ''', parameters={'name': resource_list, 'policy': row.PolicyName})
-                    # else:
-
                     for resource in resource_list:
                         tx.evaluate('''
                             MERGE (resource:Resource {name: $name, forPolicy: $policy})  
@@ -78,11 +72,6 @@ def create_resource_nodes(gr, policies):
                         tmp = [not_resource_list]
                         not_resource_list = tmp
 
-                    # if type(not_resource_list) is str:
-                    #     tx.evaluate('''
-                    #             MERGE (notresource:NotResource {name: $name, forPolicy: $policy})
-                    #             ''', parameters={'name': not_resource_list, 'policy': row.PolicyName})
-                    # else:
                     for not_resource in not_resource_list:
                         tx.evaluate('''
                             MERGE (notresource:NotResource {name: $name, forPolicy: $policy})  
