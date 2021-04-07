@@ -129,7 +129,7 @@ def retrieve_roles():
 # Method to export the generated dataframes as a single xlsx file
 def file_exporter(policies, users, groups, roles):
     # Check if the output directory exists, if not create it
-    outdir = './output'
+    outdir = './collector/output'
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
