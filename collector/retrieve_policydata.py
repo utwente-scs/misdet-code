@@ -129,12 +129,13 @@ def retrieve_roles():
 # Method to export the generated dataframes as a single xlsx file
 def file_exporter(policies, users, groups, roles):
     # Check if the output directory exists, if not create it
-    outdir = './collector/output'
-    if not os.path.exists(outdir):
-        os.mkdir(outdir)
+    outdir = '/output'
+    absolute_dir_path = os.path.abspath(os.path.dirname(__file__))
+    if not os.path.exists(absolute_dir_path + outdir):
+        os.mkdir(absolute_dir_path + outdir)
 
     with pd.ExcelWriter(
-            outdir + '/iam_policy_data_' + time.strftime("%Y-%m-%d") + '_' + time.strftime(
+            absolute_dir_path + outdir + '/iam_policy_data_' + time.strftime("%Y-%m-%d") + '_' + time.strftime(
                 "%H:%M") + '.xlsx') as writer:
         policies.to_excel(writer, sheet_name="policies")
         users.to_excel(writer, sheet_name="users")
