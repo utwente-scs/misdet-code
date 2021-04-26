@@ -5,15 +5,19 @@ import pandas as pd
 import json
 
 
-def load_excel():
+def load_excel(data_file):
     # Import the data from excel file as new dataframes
-    df_policies = pd.read_excel('output/iam_policy_data_2021-04-02_17:19.xlsx', sheet_name='policies')
-    df_users = pd.read_excel('output/iam_policy_data_2021-04-02_17:19.xlsx', sheet_name='users')
-    df_groups = pd.read_excel('output/iam_policy_data_2021-04-02_17:19.xlsx', sheet_name='groups')
-    df_roles = pd.read_excel('output/iam_policy_data_2021-04-02_17:19.xlsx', sheet_name='roles')
+    output_dir = './output/'
+    file_path = output_dir + data_file
+
+    df_policies = pd.read_excel(file_path, sheet_name='policies', index_col=0)
+    df_users = pd.read_excel(file_path, sheet_name='users', index_col=0)
+    df_groups = pd.read_excel(file_path, sheet_name='groups', index_col=0)
+    df_roles = pd.read_excel(file_path, sheet_name='roles', index_col=0)
 
     # Fill NaN (Not a Number) field with an empty string
     df_policies.fillna('', inplace=True)
+    df_roles.columns = df_roles.columns.str.replace('.', '', regex=False)
 
     # Check if extra space was needed for the policy object, if so merge it again
     if 'ExtraPolicySpace' in df_policies.columns:
@@ -245,9 +249,11 @@ def create_role_nodes(gr, roles):
 
     for index, row in roles.iterrows():
         tx.evaluate('''
-            CREATE (role:Role {name: $name, id: $id, arn: $arn, attachedPolicies: $attachedPolicies}) RETURN role
+            CREATE (role:Role {name: $name, id: $id, arn: $arn, attachedPolicies: $attachedPolicies, assumeRolePolicyDocumentVersion: $assumeRolePolicyDocumentVersion ,assumeRolePolicyDocumentStatement: $assumeRolePolicyDocumentStatement}) RETURN role
             ''', parameters={'name': row.RoleName, 'id': row.RoleId, 'arn': row.Arn,
-                             'attachedPolicies': row.AttachedPolicies})
+                             'attachedPolicies': row.AttachedPolicies,
+                             'assumeRolePolicyDocumentVersion': row.AssumeRolePolicyDocumentStatement,
+                             'assumeRolePolicyDocumentStatement': row.AssumeRolePolicyDocumentStatement})
     tx.commit()
 
     tx = gr.begin()
@@ -266,7 +272,7 @@ def create_role_nodes(gr, roles):
 
 if __name__ == "__main__":
     graph = Graph("bolt://localhost:7687", user="neo4j", password="password")
-    df_policies, df_users, df_groups, df_roles = load_excel()
+    df_policies, df_users, df_groups, df_roles = load_excel("iam_policy_data_2021-04-09_10:15.xlsx")
     print('Start loading nodes')
     create_policy_nodes(graph, df_policies)
     print('Start loading resources')
