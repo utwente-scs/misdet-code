@@ -8,3 +8,4 @@ This repository consists of multiple python scripts that each have their own pur
 
 - [Data Collector](collector): Code to retrieve the needed data 
 - [Data Loader](data_loader): Code to load the data into the graph model
+- [Anomaly Detector](anomaly_detection): Code to perform anomaly detection
