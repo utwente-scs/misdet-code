@@ -81,6 +81,8 @@ def preprocess_policies(policies, misconfigurations):
 
         # Loop over all subpolicies
         for subpolicy in policy:
+            subpolicy['PolicyName'] = name
+
             # Add to data
             X.append(subpolicy)
             y.append(label)
@@ -141,12 +143,18 @@ class CloudCustodianCustomEngine(object):
         # Loop over all policies
         for statement in X:
             # Check if statement is correct
-            result.append(self.verify_statement(statement, strict=strict))
+            violations = self.verify_statement(statement)
+
+            if violations and (strict or "allow-all" in violations):
+                result.append(1)
+            else:
+                result.append(0)
 
         # Return result
         return np.asarray(result)
 
-    def verify_statement(self, statement, strict=False):
+
+    def verify_statement(self, statement):
         """Verify whether a statement is acceptable for our rules.
 
             Note
@@ -159,16 +167,14 @@ class CloudCustodianCustomEngine(object):
             statement : dict()
                 Dictionary describing the statement.
 
-            strict : boolean, default=False
-                If True, use all policies, if False only use
-                "generally applicable" policies, i.e. overly permissive policy
-                detection.
-
             Returns
             -------
-            result : int
-                1 if statement is a mismatch, 0 otherwise.
+            result : set()
+                Set of matching policies.
             """
+        # Initialise result
+        result = set()
+
         # Extract values
         action   = statement.get('Action')
         resource = statement.get('Resource')
@@ -183,45 +189,45 @@ class CloudCustodianCustomEngine(object):
         # iam-ec2-policy-check
         # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-ec2-policy-check.yml
         if action == '*' and resource == '*' and effect == "Allow":
-            return 1
+            result.add('allow-all')
 
-        # Only do other policy checks if strict
-        if strict:
+        # Other policy checks
+        if 'Condition' not in statement and resource == "*" and effect == "Allow":
 
-            # Additional checks https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-ec2-policy-check.yml
-            if 'Condition' not in statement and resource == "*" and effect == "Allow" and (
-                    any("ec2:*"                       in a for a in actions) or
-                    any("elasticloadbalancing:*"      in a for a in actions) or
-                    any("cloudwatch:*"                in a for a in actions) or
-                    any("autoscaling:*"               in a for a in actions) or
-                    any("iam:CreateServiceLinkedRole" in a for a in actions) or
-                    any("ec2:RunInstances"            in a for a in actions)
-                ):
-                return 1
+            # Specify mismatches
+            mismatches = [
+                # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-ec2-policy-check.yml
+                "ec2:*",
+                "elasticloadbalancing:*",
+                "cloudwatch:*",
+                "autoscaling:*",
+                "iam:CreateServiceLinkedRole",
+                "ec2:RunInstances",
+
+                # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-policy-CreatePolicy-audit.yml
+                # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-policy-CreatePolicyVersion-audit.yml
+                # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-policy-account-Summary-audit.yml
+                # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-policy-account-audit.yml
+                # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-user-DeleteLoginProfile-offboarding.yml
+                # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-user-UpdateAccessKey-offboarding.yml
+                # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/c7n-org/CustomAccount/iam-user-CreateLoginProfile.yml
+                # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/c7n-org/CustomAccount/iam-user-UpdateAccessKey-audit.yml
+                "account:*",
+                "account:EnableRegion",
+            ]
+
+            # Check against mismatches
+            for mismatch in mismatches:
+                if mismatch in actions:
+                    result.add(mismatch)
+
+            # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-role-with-managed-policy-audit.yml
+            if statement.get('PolicyName') in {"AmazonEC2FullAccess", "AutoScalingFullAccess", "ElasitcLoadBalancingFullAccess", "AutoScalingConsoleFullAccess"}:
+                result.add("policyname-violation")
 
 
-            # iam-policy-CreatePolicy-audit
-            # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-policy-CreatePolicy-audit.yml
-            if self.filter_allow_all(statement) and any("CreatePolicy" in x for x in actions):
-                return 1
-
-            # iam-policy-CreatePolicyVersion-audit
-            # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-policy-CreatePolicyVersion-audit.yml
-            if self.filter_allow_all(statement) and any("CreatePolicyVersion" in x for x in actions):
-                return 1
-
-            # iam-policy-account-Summary-audit
-            # https://github.com/davidclin/cloudcustodian-policies/blob/master/policies/iam-policy-account-Summary-audit.yml
-
-        # Otherwise return 0
-        return 0
-
-    def filter_allow_all(self, statement):
-        """Returns if there is an 'allow all' statement."""
-        return statement.get('Effect') == 'Allow' and (
-            statement.get('Action')   == '*' or
-            statement.get('Resource') == '*'
-        )
+        # Return result
+        return result
 
 
 if __name__ == "__main__":
