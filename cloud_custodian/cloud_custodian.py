@@ -261,7 +261,7 @@ if __name__ == "__main__":
     # Load data for each input
     for policy in args.statements:
         data       = pd.read_excel(policy)
-        statements = get_statements(data)
+        statements = get_policies(data)
         X_, y_     = preprocess_policies(statements, misconfigurations)
 
         # Add partial results
