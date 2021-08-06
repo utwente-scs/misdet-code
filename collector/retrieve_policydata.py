@@ -1,17 +1,23 @@
-import subprocess
-import os
-import json
-import sys
-
-import pandas as pd
-import time
+# Imports
 from hashlib import sha256
+import json
+import os
+import pandas as pd
+import subprocess
+import sys
+import time
 
+################################################################################
+#                                Data retrieval                                #
+################################################################################
 
-# Run a CLI command to list all the IAM policies in the environment
 def retrieve_iam_policies():
+    """Retrieve IAM policies using aws iam command line tool."""
+
+    # Run command to list all the IAM policies in the environment
     policies = subprocess.check_output('aws iam list-policies', shell=True)
 
+    # Gather policies as json data
     json_policies = json.loads(policies)
 
     # Load the IAM policies into a pandas dataframe
@@ -38,13 +44,18 @@ def retrieve_iam_policies():
         # Only take the statement part of the policy and add to dataframe
         df_policies.at[index, 'PolicyObject'] = policy_statement
 
+    # Return collected policies
     return df_policies
 
 
 # Retrieve all the users and the policies that are attached to them in the environment
 def retrieve_users():
-    # Run a CLI command to retrieve all the users in the environment and convert the output the JSON
-    json_users = json.loads(subprocess.check_output('aws iam list-users', shell=True))
+    """Retrieve IAM users using aws iam command line tool."""
+    # Run command to retrieve all the users in the environment
+    users = subprocess.check_output('aws iam list-users', shell=True)
+
+    # Gather users as json data
+    json_users = json.loads(users)
 
     # Create a new dataframe to hold the users and retrieve the attached policies
     df_users = pd.json_normalize(json_users['Users'])
@@ -60,6 +71,7 @@ def retrieve_users():
         df_users.at[index, 'UserId'] = sha256(row.UserId.encode('utf-8')).hexdigest()
         df_users.at[index, 'Arn'] = sha256(row.Arn.encode('utf-8')).hexdigest()
 
+    # Return collected users
     return df_users
 
 
@@ -134,45 +146,62 @@ def file_exporter(policies, users, groups, roles):
     if not os.path.exists(absolute_dir_path + outdir):
         os.mkdir(absolute_dir_path + outdir)
 
+    # Write data to excel file.
     with pd.ExcelWriter(
-            absolute_dir_path + outdir + '/iam_policy_data_' + time.strftime("%Y-%m-%d") + '_' + time.strftime(
-                "%H:%M") + '.xlsx') as writer:
+            absolute_dir_path +
+            outdir +
+            '/iam_policy_data_' +
+            time.strftime("%Y-%m-%d") +
+            '_' +
+            time.strftime("%H:%M")
+            + '.xlsx'
+        ) as writer:
         policies.to_excel(writer, sheet_name="policies")
-        users.to_excel(writer, sheet_name="users")
-        groups.to_excel(writer, sheet_name="groups")
-        roles.to_excel(writer, sheet_name="roles")
+        users   .to_excel(writer, sheet_name="users")
+        groups  .to_excel(writer, sheet_name="groups")
+        roles   .to_excel(writer, sheet_name="roles")
 
 
 # Simple method to bundle the data collection methods and return the needed dataframes
-def data_collector():
+def collect_data():
+    # Collect policy data
     print('Collecting policy data...')
     policies = retrieve_iam_policies()
     print('Finished policy retrieval')
     print('-------------------------')
+
+    # Collect user data
     print('Collecting user data...')
     users = retrieve_users()
     print('Finished user retrieval')
     print('-------------------------')
+
+    # Collect group data
     print('Collecting group data...')
     groups = retrieve_groups()
     print('Finished group retrieval')
     print('-------------------------')
+
+    # Collect role data
     print('Collecting role data...')
     roles = retrieve_roles()
     print('Finished role retrieval')
 
-
+    # Export retrieved data to output file
     file_exporter(policies, users, groups, roles)
 
 
 def timer(hours):
+    """Perform a multiple rounds of data collection every given hours.
+
+        Parameters
+        ----------
+        hours : int
+            Interval in hours, each interval will collect data via the
+            collect_single() method.
+        """
     while True:
-        print('Data retrieval in progress....')
-        data_collector()
-        print('--------------------------------------------------')
-        print('Data retrieval successful')
-        print('CSV file saved in:')
-        print(os.getcwd() + '/output')
+        collect_single()
         print('--------------------------------------------------')
         print('Next collection in ' + hours + ' hours')
         print('Do not terminate this program')
@@ -182,9 +211,22 @@ def timer(hours):
         time.sleep(int(hours) * 3600)
 
 
+def collect_single():
+    """Perform a single round of data collection.
+
+        Output will be saved in the ./output directory.
+        """
+    print('Data retrieval in progress....')
+    collect_data()
+    print('--------------------------------------------------')
+    print('Data retrieval successful')
+    print('CSV file saved in:')
+    print(os.getcwd() + '/output')
+
+
 if __name__ == '__main__':
     print('--------------------------------------------------')
-    print('Starting data retrieval from the AWS environment')
+    print(' Starting data retrieval from the AWS environment ')
     print('--------------------------------------------------')
 
     # If an argument is passed for the frequency start the timer, otherwise 'single shot collection
@@ -192,11 +234,6 @@ if __name__ == '__main__':
         timer(sys.argv[1])
 
     else:
-        print('Data retrieval in progress....')
-        data_collector()
-        print('--------------------------------------------------')
-        print('Data retrieval successful')
-        print('CSV file saved in:')
-        print(os.getcwd() + '/output')
+        collect_single()
 
     print('--------------------------------------------------')
