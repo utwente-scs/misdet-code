@@ -28,7 +28,21 @@ def retrieve_embeddings(driver):
         return pd.DataFrame([dict(record) for record in result])
 
 
-def split_data(X, misconfigurations):
+def split_data(X, misconfigurations = [
+        'tf-secmon-iam-policy',
+        'tf-splunk-ingestion-aws-addon-policy-master20200917101618881200000005',
+        'tf-customconfig-policy-master',
+        'tf-ds-tscm-lambda-policy',
+        'tf-aws-team-cf-cr',
+        'awt-role-boundary',
+        'awt-user-boundary',
+        'CloudabilityPolicy',
+        'PowerUserAccess',
+        'AdministratorAccess',
+        'AWSOpsWorksRegisterCLI',
+        'AWSCodeStarServiceRole',
+        'AWSApplicationMigrationReplicationServerPolicy',
+    ]):
     """Split data such that the train data contains only correct configurations
         and the test data contains a mix of correct and misconfigured policies.
 
@@ -37,8 +51,11 @@ def split_data(X, misconfigurations):
         X : pd.DataFrame
             Dataframe to split into train and test data.
 
-        misconfigurations : list
+        misconfigurations : list, default=list used for own database.
             List of misconfigured policynames.
+
+            Important: The misconfigurations must be specified if using
+            different evaluation data.
 
         Returns
         -------
@@ -63,23 +80,6 @@ def split_data(X, misconfigurations):
 
     # Create dataframe for misconfigurations
     df_misconfs = pd.DataFrame(columns=['policy', 'embedding', 'target'])
-
-    # These are specific misconfigurations in this dataset, need to be changed for new datasets.
-    misconfigurations = [
-        'tf-secmon-iam-policy',
-        'tf-splunk-ingestion-aws-addon-policy-master20200917101618881200000005',
-        'tf-customconfig-policy-master',
-        'tf-ds-tscm-lambda-policy',
-        'tf-aws-team-cf-cr',
-        'awt-role-boundary',
-        'awt-user-boundary',
-        'CloudabilityPolicy',
-        'PowerUserAccess',
-        'AdministratorAccess',
-        'AWSOpsWorksRegisterCLI',
-        'AWSCodeStarServiceRole',
-        'AWSApplicationMigrationReplicationServerPolicy',
-    ]
 
     # Loop over all policies
     for name in misconfigurations:
