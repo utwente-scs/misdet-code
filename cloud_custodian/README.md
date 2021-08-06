@@ -13,7 +13,10 @@ pip install argformat numpy pandas scikit-learn
 ```
 
 ## Usage
-TODO
+To check a file against the Cloud Custodian rules, we simply run `cloud_custodian.py` with a path to the given excel file:
+```
+python3 cloud_custodian.py ../collector/example/iam_policy_data_2021-03-26_14:11.xlsx
+```
 
 ## Cloud Custodian patch
 
