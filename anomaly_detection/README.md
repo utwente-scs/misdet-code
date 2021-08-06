@@ -16,6 +16,34 @@ The scripts used for anomaly detection require the following Python libraries to
 pip install neo4j pandas scikit-learn
 ```
 
+## Usage
+To evaluate an anomaly detection algorithm, simply run the corresponding python script.
+E.g.,
+```
+python3 isolation_forest.py
+```
+
+### Connect to correct database instance
+Note that the scripts will attempt to connect to a Neo4j database instance.
+By default, we connect to the following instance, with the following credentials:
+```python
+driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+```
+Please modify this line in the ``__main__`` function of a script to connect to your database instance with the correct credentials.
+
+### Perform train-test split with own data
+The current implementation splits the data using the default `misconfigurations` parameter in the `split_data()` function from `utils.py`.
+In case you use a different dataset, please specify the policy names of the misconfigurations as a list. E.g.,
+```python
+# Split into train and test sets
+X_train, X_test, y_train, y_test = split_data(embedded_nodes, misconfigurations=[
+    'policy name 1',
+    'policy name 2',
+    '...',
+    'policy name n',
+])
+```
+
 ## Setup
 Each script is structured as follows:
  1. Load data from Neo4j database

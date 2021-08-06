@@ -1,8 +1,10 @@
 from load_data import *
 
-
-# Delete all the roles and the the attached relationships in the graph
+################################################################################
+#                          Auxiliary graph functions                           #
+################################################################################
 def delete_roles(gr):
+    """Delete all the roles and the attached relationships in the graph."""
     tx = gr.begin()
     tx.evaluate('''
         MATCH (r:Role)
@@ -11,8 +13,8 @@ def delete_roles(gr):
     tx.commit()
 
 
-# Delete all the users and the the attached relationships in the graph
 def delete_users(gr):
+    """Delete all the users and the attached relationships in the graph."""
     tx = gr.begin()
     tx.evaluate('''
         MATCH (u:User)
@@ -21,8 +23,8 @@ def delete_users(gr):
     tx.commit()
 
 
-# Delete all the groups and the the attached relationships in the graph
 def delete_groups(gr):
+    """Delete all the groups and the attached relationships in the graph."""
     tx = gr.begin()
     tx.evaluate('''
         MATCH (g:Group)
@@ -32,6 +34,7 @@ def delete_groups(gr):
 
 
 def delete_policy_nodes(gr, policies):
+    """Delete all the policies and the attached relationships in the graph."""
     tx = gr.begin()
 
     for index, row in policies.iterrows():
@@ -44,23 +47,24 @@ def delete_policy_nodes(gr, policies):
     tx.commit()
 
 
-# Update the entities (users, groups and roles) in the graph
 def update_entities(gr, users, groups, roles):
+    """Update the entities (users, groups and roles) in the graph."""
     # First delete all the entities in the graph
-    delete_users(gr)
+    delete_users (gr)
     delete_groups(gr)
-    delete_roles(gr)
+    delete_roles (gr)
 
     # Now recreate the updated entities
-    create_user_nodes(gr, users)
+    create_user_nodes (gr, users)
     create_group_nodes(gr, groups)
-    create_role_nodes(gr, roles)
+    create_role_nodes (gr, roles)
 
 
 def create_updated_policy_nodes(gr, policies):
-    create_policy_nodes(gr, policies)
+    """Update the policy nodes in the graph."""
+    create_policy_nodes  (gr, policies)
     create_resource_nodes(gr, policies)
-    create_action_nodes(gr, policies)
+    create_action_nodes  (gr, policies)
 
 
 def update_policy_node(gr, policies, new_policies):
@@ -153,8 +157,8 @@ def compare_policies(old_policies, new_policies):
 if __name__ == "__main__":
     graph = Graph("bolt://localhost:7687", user="neo4j", password="password")
 
-    df_policies, df_users, df_groups, df_roles = load_excel('iam_policy_data_2021-04-02_12:19.xlsx')
-    new_df_policies, new_df_users, new_df_groups, new_df_roles = load_excel('iam_policy_data_2021-04-02_13:12.xlsx')
+    df_policies, df_users, df_groups, df_roles = load_excel('./output/iam_policy_data_2021-04-02_12:19.xlsx')
+    new_df_policies, new_df_users, new_df_groups, new_df_roles = load_excel('./output/iam_policy_data_2021-04-02_13:12.xlsx')
 
     delete, add, difference = compare_policies(df_policies, new_df_policies)
 

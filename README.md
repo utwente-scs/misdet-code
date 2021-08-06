@@ -24,4 +24,9 @@ This repository consists of multiple python scripts that each have their own pur
 - [Data Loader](data_loader): Code to load data into our graph model.
 
 ## References
-Anonymized
+[1] TODO
+
+### Bibtex
+```
+TODO
+```

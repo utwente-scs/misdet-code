@@ -1,19 +1,38 @@
+from py2neo import Graph
+import json
+import pandas as pd
 import sys
 
-from py2neo import Graph
-import pandas as pd
-import json
 
+def load_excel(file_path):
+    """Load pandas dataframes from stored Excel files.
 
-def load_excel(data_file):
-    # Import the data from excel file as new dataframes
-    output_dir = './output/'
-    file_path = output_dir + data_file
+        Parameters
+        ----------
+        file_path : string
+            File path from which to load data.
 
+        Returns
+        -------
+        policies : pd.DataFrame
+            DataFrame listing all policies.
+
+        users : pd.DataFrame
+            DataFrame listing all users.
+
+        groups : pd.DataFrame
+            DataFrame listing all groups.
+
+        roles : pd.DataFrame
+            DataFrame listing all roles.
+
+        """
+
+    # Read from input file
     df_policies = pd.read_excel(file_path, sheet_name='policies', index_col=0)
-    df_users = pd.read_excel(file_path, sheet_name='users', index_col=0)
-    df_groups = pd.read_excel(file_path, sheet_name='groups', index_col=0)
-    df_roles = pd.read_excel(file_path, sheet_name='roles', index_col=0)
+    df_users    = pd.read_excel(file_path, sheet_name='users'   , index_col=0)
+    df_groups   = pd.read_excel(file_path, sheet_name='groups'  , index_col=0)
+    df_roles    = pd.read_excel(file_path, sheet_name='roles'   , index_col=0)
 
     # Fill NaN (Not a Number) field with an empty string
     df_policies.fillna('', inplace=True)
@@ -25,24 +44,49 @@ def load_excel(data_file):
             if row.ExtraPolicySpace != '':
                 df_policies.at[index, 'PolicyObject'] = row.PolicyObject + row.ExtraPolicySpace
 
+    # Return result
     return df_policies, df_users, df_groups, df_roles
 
 
 def create_policy_nodes(gr, policies):
+    """Create policy nodes for given graph.
+
+        Parameters
+        ----------
+        gr : Graph
+            Graph for which to create nodes.
+
+        policies : pd.DataFrame
+            Policies for which to create nodes.
+        """
     tx = gr.begin()
 
     for index, row in policies.iterrows():
         tx.evaluate('''
         CREATE (policy:Policy {name: $name, id: $id, arn: $arn, policyObject: $policyObject}) RETURN policy
-        ''', parameters={'name': row.PolicyName, 'id': row.PolicyId, 'arn': row.Arn,
-                         'policyObject': row.PolicyObject})
+        ''', parameters={
+            'name'        : row.PolicyName,
+            'id'          : row.PolicyId,
+            'arn'         : row.Arn,
+            'policyObject': row.PolicyObject,
+        })
     tx.commit()
 
 
-def create_resource_nodes(gr, policies):
+def create_resource_nodes(gr, resources):
+    """Create resource nodes for given graph.
+
+        Parameters
+        ----------
+        gr : Graph
+            Graph for which to create nodes.
+
+        resources : pd.DataFrame
+            Resources for which to create nodes.
+        """
     tx = gr.begin()
 
-    for index, row in policies.iterrows():
+    for index, row in resources.iterrows():
         policy_object = row.PolicyObject.replace("\'", "\"")
         policy_object = policy_object.replace("True", "true")
         policy_object = policy_object.replace("False", "false")
@@ -66,7 +110,7 @@ def create_resource_nodes(gr, policies):
 
                     for resource in resource_list:
                         tx.evaluate('''
-                            MERGE (resource:Resource {name: $name, forPolicy: $policy})  
+                            MERGE (resource:Resource {name: $name, forPolicy: $policy})
                             ''', parameters={'name': resource, 'policy': row.PolicyName})
 
                 elif 'NotResource' in policy:
@@ -78,7 +122,7 @@ def create_resource_nodes(gr, policies):
 
                     for not_resource in not_resource_list:
                         tx.evaluate('''
-                            MERGE (notresource:NotResource {name: $name, forPolicy: $policy})  
+                            MERGE (notresource:NotResource {name: $name, forPolicy: $policy})
                             ''', parameters={'name': not_resource, 'policy': row.PolicyName})
 
         except:
@@ -90,10 +134,20 @@ def create_resource_nodes(gr, policies):
     tx.commit()
 
 
-def create_action_nodes(gr, policies):
+def create_action_nodes(gr, actions):
+    """Create action nodes for given graph.
+
+        Parameters
+        ----------
+        gr : Graph
+            Graph for which to create nodes.
+
+        actions : pd.DataFrame
+            Actions for which to create nodes.
+        """
     tx = gr.begin()
 
-    for index, row in policies.iterrows():
+    for index, row in actions.iterrows():
         # Replace single quote with double quote for json parsing
         policy_object = row.PolicyObject.replace("\'", "\"")
         policy_object = policy_object.replace("True", "true")
@@ -142,7 +196,7 @@ def create_action_nodes(gr, policies):
                     for resource in resource_list:
                         for action in action_list:
                             tx.evaluate('''
-                                MATCH (p:Policy), (res:Resource)  
+                                MATCH (p:Policy), (res:Resource)
                                 WHERE p.name = $policyName AND res.name = $resourceName AND res.forPolicy = $policy
                                 CREATE (p)-[:CONTAINS]->(action:Action {name: $name})-[:WORKS_ON]->(res)
                                 RETURN action
@@ -153,7 +207,7 @@ def create_action_nodes(gr, policies):
                     for resource in not_resource_list:
                         for action in action_list:
                             tx.evaluate('''
-                                MATCH (p:Policy), (res:NotResource)  
+                                MATCH (p:Policy), (res:NotResource)
                                 WHERE p.name = $policyName AND res.name = $resourceName AND res.forPolicy = $policy
                                 CREATE (p)-[:CONTAINS]->(action:NotAction {name: $name})-[:WORKS_NOT_ON]->(res)
                                 RETURN action
@@ -164,7 +218,7 @@ def create_action_nodes(gr, policies):
                     for resource in not_resource_list:
                         for action in not_action_list:
                             tx.evaluate('''
-                                MATCH (p:Policy), (res:NotResource)  
+                                MATCH (p:Policy), (res:NotResource)
                                 WHERE p.name = $policyName AND res.name = $resourceName AND res.forPolicy = $policy
                                 CREATE (p)-[:CONTAINS]->(action:notAction {name: $name})-[:WORKS_NOT_ON]->(res)
                                 RETURN action
@@ -175,7 +229,7 @@ def create_action_nodes(gr, policies):
                     for resource in resource_list:
                         for action in not_action_list:
                             tx.evaluate('''
-                                MATCH (p:Policy), (res:Resource)  
+                                MATCH (p:Policy), (res:Resource)
                                 WHERE p.name = $policyName AND res.name = $resourceName AND res.forPolicy = $policy
                                 CREATE (p)-[:CONTAINS]->(action:NotAction {name: $name})-[:WORKS_NOT_ON]->(res)
                                 RETURN action
@@ -189,6 +243,16 @@ def create_action_nodes(gr, policies):
 
 
 def create_user_nodes(gr, users):
+    """Create user nodes for given graph.
+
+        Parameters
+        ----------
+        gr : Graph
+            Graph for which to create nodes.
+
+        users : pd.DataFrame
+            Users for which to create nodes.
+        """
     tx = gr.begin()
 
     for index, row in users.iterrows():
@@ -212,6 +276,16 @@ def create_user_nodes(gr, users):
 
 
 def create_group_nodes(gr, groups):
+    """Create group nodes for given graph.
+
+        Parameters
+        ----------
+        gr : Graph
+            Graph for which to create nodes.
+
+        groups : pd.DataFrame
+            Groups for which to create nodes.
+        """
     tx = gr.begin()
 
     for index, row in groups.iterrows():
@@ -245,6 +319,16 @@ def create_group_nodes(gr, groups):
 
 
 def create_role_nodes(gr, roles):
+    """Create role nodes for given graph.
+
+        Parameters
+        ----------
+        gr : Graph
+            Graph for which to create nodes.
+
+        roles : pd.DataFrame
+            Roles for which to create nodes.
+        """
     tx = gr.begin()
 
     for index, row in roles.iterrows():
@@ -271,8 +355,13 @@ def create_role_nodes(gr, roles):
 
 
 if __name__ == "__main__":
+    # Create connection with Graph
     graph = Graph("bolt://localhost:7687", user="neo4j", password="password")
-    df_policies, df_users, df_groups, df_roles = load_excel("iam_policy_data_2021-04-09_10:15.xlsx")
+
+    # Load data from stored files
+    df_policies, df_users, df_groups, df_roles = load_excel("./output/iam_policy_data_2021-04-09_10:15.xlsx")
+
+    # Create relevant nodes
     print('Start loading nodes')
     create_policy_nodes(graph, df_policies)
     print('Start loading resources')
@@ -280,4 +369,4 @@ if __name__ == "__main__":
     print('Start loading actions')
     create_action_nodes(graph, df_policies)
     print('Start loading roles')
-    create_role_nodes(graph, df_roles)
+    create_role_nodes (graph, df_roles)
