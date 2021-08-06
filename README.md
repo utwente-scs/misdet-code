@@ -18,10 +18,47 @@ Our paper demonstrates its effectiveness to detect misconfigurations that has a 
 ## Overview
 This repository consists of multiple python scripts that each have their own purpose, namely:
 
-- [Anomaly Detector](anomaly_detection): Code to perform anomaly detection.
-- [Cloud Custodian](cloud_custodian): Code used for the cloud custodian experiment.
-- [Data Collector](collector): Code used to retrieve our required data.
-- [Data Loader](data_loader): Code to load data into our graph model.
+- [Anomaly Detector](anomaly_detection): Code to perform anomaly detection (Sections 5.2-5.5 of paper).
+- [Cloud Custodian](cloud_custodian): Code used for the cloud custodian experiment (Section 5.2 of paper).
+- [Data Collector](collector): Code used to retrieve our required data (Sections 3.2-3.3 and 4.1-4.2 of paper).
+- [Data Loader](data_loader): Code to load data into our graph model (Sections 3.2-3.3 and 4.1-4.2 of paper).
+
+Each directory contains a `README.md` file explaining how to use the artifacts of that directory.
+
+## Download and installation
+Currently, you can only download our code from this GitHub repository.
+To download the code, please clone this repository or [download](https://github.com/utwente-scs/misdet-code/archive/refs/heads/master.zip) the repository as a zip archive.
+
+```
+git clone git@github.com:utwente-scs/misdet-code.git
+```
+
+### Dependencies
+First, to interact with the AWS environment, the installation and proper configuration of the AWS CLI is required. Also,
+make sure to have the proper credentials for the AWS environment set in the ```credentials``` file in the ```~/.aws/```
+directory. If you have not yet done this before, follow the instructions provided
+here: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html.  
+The easiest way to verify whether the CLI is configured properly, is by running the following command:
+
+```
+aws sts get-caller-identity
+```
+
+Our code requires [Python3](https://www.python.org/) and the following Python libraries to be installed (see individual directories for specific requirements of experiments):
+ * [argformat](https://pypi.org/project/argformat/)
+ * [neo4j](https://pypi.org/project/neo4j/)
+ * [numpy](https://numpy.org/)
+ * [openpyxl](https://openpyxl.readthedocs.io/en/stable/)
+ * [pandas](https://pandas.pydata.org/)
+ * [py2neo](https://py2neo.org/2021.1/)
+ * [scikit-learn](https://scikit-learn.org/stable/index.html)
+
+```
+pip install argformat neo4j numpy openpyxl pandas py2neo scikit-learn
+```
+
+## Usage
+Please see the `README.md` files in each individual directory for instructions on how to use the separate artifacts.
 
 ## References
 [1] TODO
