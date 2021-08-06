@@ -18,9 +18,10 @@ Our paper demonstrates its effectiveness to detect misconfigurations that has a 
 ## Overview
 This repository consists of multiple python scripts that each have their own purpose, namely:
 
-- [Data Collector](collector): Code used to retrieve our required data
-- [Data Loader](data_loader): Code to load data into our graph model
-- [Anomaly Detector](anomaly_detection): Code to perform anomaly detection
+- [Anomaly Detector](anomaly_detection): Code to perform anomaly detection.
+- [Cloud Custodian](cloud_custodian): Code used for the cloud custodian experiment.
+- [Data Collector](collector): Code used to retrieve our required data.
+- [Data Loader](data_loader): Code to load data into our graph model.
 
 ## References
 Anonymized
