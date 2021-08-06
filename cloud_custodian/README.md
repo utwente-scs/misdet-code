@@ -5,7 +5,7 @@ This directory contains the code used to compare our approach with Cloud Custodi
 
 ### Note
 ```
-This patch is required when using the c7n package.
+This patch is only required when using the c7n package.
 The cloud_custodian script provides an engine for applying the specific rules from https://github.com/davidclin/cloudcustodian-policies without requiring the c7n package.
 ```
 
