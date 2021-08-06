@@ -6,6 +6,16 @@ We provide a separate file for each anomaly detection algorithm:
  * `one_class_svm.py` contains the code for the One-class Support Vector Machine algorithm.
  * `robust_covariance.py` contains the code for the Elliptic Envelope algorithm.
 
+## Dependencies
+The scripts used for anomaly detection require the following Python libraries to be installed:
+ * [neo4j](https://pypi.org/project/neo4j/)
+ * [pandas](https://pandas.pydata.org/)
+ * [scikit-learn](https://scikit-learn.org/stable/index.html)
+
+```
+pip install neo4j pandas scikit-learn
+```
+
 ## Setup
 Each script is structured as follows:
  1. Load data from Neo4j database

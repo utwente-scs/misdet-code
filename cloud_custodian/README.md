@@ -1,6 +1,17 @@
 # Code for experiments with Cloud Custodian
 This directory contains the code used to compare our approach with Cloud Custodian.
 
+## Dependencies
+The scripts used for anomaly detection require the following Python libraries to be installed:
+* [argformat](https://pypi.org/project/argformat/)
+* [numpy](https://numpy.org/)
+* [pandas](https://pandas.pydata.org/)
+* [scikit-learn](https://scikit-learn.org/stable/index.html)
+
+```
+pip install argformat numpy pandas scikit-learn
+```
+
 ## Cloud Custodian patch
 
 ### Note
