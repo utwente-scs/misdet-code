@@ -1,8 +1,9 @@
 from py2neo import Graph
+from tqdm import tqdm
 import json
 import pandas as pd
 import sys
-
+import warnings
 
 def load_excel(file_path):
     """Load pandas dataframes from stored Excel files.
@@ -61,7 +62,7 @@ def create_policy_nodes(gr, policies):
         """
     tx = gr.begin()
 
-    for index, row in policies.iterrows():
+    for index, row in tqdm(policies.iterrows(), desc="Loading policies"):
         tx.evaluate('''
         CREATE (policy:Policy {name: $name, id: $id, arn: $arn, policyObject: $policyObject}) RETURN policy
         ''', parameters={
@@ -70,7 +71,7 @@ def create_policy_nodes(gr, policies):
             'arn'         : row.Arn,
             'policyObject': row.PolicyObject,
         })
-    tx.commit()
+    gr.commit(tx)
 
 
 def create_resource_nodes(gr, resources):
@@ -86,7 +87,7 @@ def create_resource_nodes(gr, resources):
         """
     tx = gr.begin()
 
-    for index, row in resources.iterrows():
+    for index, row in tqdm(resources.iterrows(), desc="Loading resources"):
         policy_object = row.PolicyObject.replace("\'", "\"")
         policy_object = policy_object.replace("True", "true")
         policy_object = policy_object.replace("False", "false")
@@ -125,13 +126,10 @@ def create_resource_nodes(gr, resources):
                             MERGE (notresource:NotResource {name: $name, forPolicy: $policy})
                             ''', parameters={'name': not_resource, 'policy': row.PolicyName})
 
-        except:
-            e = sys.exc_info()[0]
-            print(policy_object)
-            print(e)
-            print('Error while loading: ' + row.PolicyName + 'and object: ' + policy_object)
+        except json.decoder.JSONDecodeError as e:
+            warnings.warn("Error in row '{}': '{}', skipping row...".format(row.PolicyName, e))
 
-    tx.commit()
+    gr.commit(tx)
 
 
 def create_action_nodes(gr, actions):
@@ -147,7 +145,7 @@ def create_action_nodes(gr, actions):
         """
     tx = gr.begin()
 
-    for index, row in actions.iterrows():
+    for index, row in tqdm(actions.iterrows(), desc="Loading actions"):
         # Replace single quote with double quote for json parsing
         policy_object = row.PolicyObject.replace("\'", "\"")
         policy_object = policy_object.replace("True", "true")
@@ -236,10 +234,10 @@ def create_action_nodes(gr, actions):
                                ''', parameters={'policyName': row.PolicyName, 'resourceName': resource, 'name': action,
                                                 'policy': row.PolicyName})
 
-        except:
-            print('Error while loading: ' + row.PolicyName + 'and object: ' + policy_object)
+        except json.decoder.JSONDecodeError as e:
+            warnings.warn("Error in row '{}': '{}', skipping row...".format(row.PolicyName, e))
 
-    tx.commit()
+    gr.commit(tx)
 
 
 def create_user_nodes(gr, users):
@@ -255,15 +253,15 @@ def create_user_nodes(gr, users):
         """
     tx = gr.begin()
 
-    for index, row in users.iterrows():
+    for index, row in tqdm(users.iterrows(), desc="Loading users"):
         tx.evaluate('''
             CREATE (user:User {name: $name, id: $id, arn: $arn, attachedPolicies: $attachedPolicies}) RETURN user
             ''', parameters={'name': row.UserName, 'id': row.UserId, 'arn': row.Arn,
                              'attachedPolicies': row.AttachedPolicies})
-    tx.commit()
+    gr.commit(tx)
 
     tx = gr.begin()
-    for index, row in users.iterrows():
+    for index, row in tqdm(users.iterrows(), desc="Attaching user policies"):
         attached_policies = row.AttachedPolicies.replace("\'", "\"")
         attached_policies_list = json.loads(attached_policies)
         for policy in attached_policies_list:
@@ -272,7 +270,7 @@ def create_user_nodes(gr, users):
                 WHERE u.name = $userName AND p.name = $policyName
                 CREATE (p)-[:IS_ATTACHED_TO]->(u)
                 ''', parameters={'userName': row.UserName, 'policyName': policy['PolicyName']})
-    tx.commit()
+    gr.commit(tx)
 
 
 def create_group_nodes(gr, groups):
@@ -288,15 +286,15 @@ def create_group_nodes(gr, groups):
         """
     tx = gr.begin()
 
-    for index, row in groups.iterrows():
+    for index, row in tqdm(groups.iterrows(), desc="Loading groups"):
         tx.evaluate('''
             CREATE (group:Group {name: $name, id: $id, arn: $arn, attachedPolicies: $attachedPolicies, user: $users}) RETURN group
             ''', parameters={'name': row.GroupName, 'id': row.GroupId, 'arn': row.Arn,
                              'attachedPolicies': row.AttachedPolicies, 'users': row.Users})
-    tx.commit()
+    gr.commit(tx)
 
     tx = gr.begin()
-    for index, row in groups.iterrows():
+    for index, row in tqdm(groups.iterrows(), desc="Attaching group policies"):
         attached_policies = row.AttachedPolicies.replace("\'", "\"")
         attached_policies_list = json.loads(attached_policies)
         for policy in attached_policies_list:
@@ -305,7 +303,7 @@ def create_group_nodes(gr, groups):
                 WHERE g.name = $groupName AND p.name = $policyName
                 CREATE (p)-[:IS_ATTACHED_TO]->(g)
                 ''', parameters={'groupName': row.GroupName, 'policyName': policy['PolicyName']})
-        tx.commit()
+        gr.commit(tx)
         tx = gr.begin()
         users = row.Users.replace("\'", "\"")
         users_list = json.loads(users)
@@ -315,7 +313,7 @@ def create_group_nodes(gr, groups):
                 WHERE u.name = $userName AND g.name = $groupName
                 CREATE (u)-[:PART_OF]->(g)
                 ''', parameters={'userName': user['UserName'], 'groupName': row.GroupName})
-        tx.commit()
+        gr.commit(tx)
 
 
 def create_role_nodes(gr, roles):
@@ -331,18 +329,32 @@ def create_role_nodes(gr, roles):
         """
     tx = gr.begin()
 
-    for index, row in roles.iterrows():
-        tx.evaluate('''
-            CREATE (role:Role {name: $name, id: $id, arn: $arn, attachedPolicies: $attachedPolicies, assumeRolePolicyDocumentVersion: $assumeRolePolicyDocumentVersion ,assumeRolePolicyDocumentStatement: $assumeRolePolicyDocumentStatement}) RETURN role
-            ''', parameters={'name': row.RoleName, 'id': row.RoleId, 'arn': row.Arn,
-                             'attachedPolicies': row.AttachedPolicies,
-                             'assumeRolePolicyDocumentVersion': row.AssumeRolePolicyDocumentStatement,
-                             'assumeRolePolicyDocumentStatement': row.AssumeRolePolicyDocumentStatement})
-    tx.commit()
+    for index, row in tqdm(roles.iterrows(), desc="Loading roles"):
+        try:
+            tx.evaluate('''
+                CREATE (role:Role {name: $name, id: $id, arn: $arn, attachedPolicies: $attachedPolicies, assumeRolePolicyDocumentVersion: $assumeRolePolicyDocumentVersion ,assumeRolePolicyDocumentStatement: $assumeRolePolicyDocumentStatement}) RETURN role
+                ''', parameters={'name': row.RoleName, 'id': row.RoleId, 'arn': row.Arn,
+                                 'attachedPolicies': row.AttachedPolicies,
+                                 'assumeRolePolicyDocumentVersion': row.AssumeRolePolicyDocumentStatement,
+                                 'assumeRolePolicyDocumentStatement': row.AssumeRolePolicyDocumentStatement})
+        except AttributeError as e:
+            # Print warning
+            warnings.warn("Error in row '{}': '{}', trying to load as json...".format(row.RoleName, e))
+
+            policy_document = json.loads(row.AssumeRolePolicyDocument)
+
+            tx.evaluate('''
+                CREATE (role:Role {name: $name, id: $id, arn: $arn, attachedPolicies: $attachedPolicies, assumeRolePolicyDocumentVersion: $assumeRolePolicyDocumentVersion ,assumeRolePolicyDocumentStatement: $assumeRolePolicyDocumentStatement}) RETURN role
+                ''', parameters={'name': row.RoleName, 'id': row.RoleId, 'arn': row.Arn,
+                                 'attachedPolicies': row.AttachedPolicies,
+                                 'assumeRolePolicyDocumentVersion': policy_document.get('Version', 'N/A'),
+                                 'assumeRolePolicyDocumentStatement': str(policy_document.get('Statement', 'N/A'))})
+
+    gr.commit(tx)
 
     tx = gr.begin()
 
-    for index, row in roles.iterrows():
+    for index, row in tqdm(roles.iterrows(), desc="Attaching role policies"):
         attached_policies = row.AttachedPolicies.replace("\'", "\"")
         attached_policies_list = json.loads(attached_policies)
         for policy in attached_policies_list:
@@ -351,7 +363,7 @@ def create_role_nodes(gr, roles):
                 WHERE r.name = $roleName AND p.name = $policyName
                 CREATE (p)-[:IS_ATTACHED_TO]->(r)
                 ''', parameters={'roleName': row.RoleName, 'policyName': policy['PolicyName']})
-    tx.commit()
+    gr.commit(tx)
 
 
 if __name__ == "__main__":
@@ -359,14 +371,11 @@ if __name__ == "__main__":
     graph = Graph("bolt://localhost:7687", user="neo4j", password="password")
 
     # Load data from stored files
-    df_policies, df_users, df_groups, df_roles = load_excel("./output/iam_policy_data_2021-04-09_10:15.xlsx")
+    # df_policies, df_users, df_groups, df_roles = load_excel("./output/iam_policy_data_2021-04-09_10:15.xlsx")
+    df_policies, df_users, df_groups, df_roles = load_excel("../data/iam_policy_data_2021-05-12_11:03.xlsx")
 
     # Create relevant nodes
-    print('Start loading nodes')
-    create_policy_nodes(graph, df_policies)
-    print('Start loading resources')
+    create_policy_nodes  (graph, df_policies)
     create_resource_nodes(graph, df_policies)
-    print('Start loading actions')
-    create_action_nodes(graph, df_policies)
-    print('Start loading roles')
-    create_role_nodes (graph, df_roles)
+    create_action_nodes  (graph, df_policies)
+    create_role_nodes    (graph, df_roles)

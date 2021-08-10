@@ -10,7 +10,7 @@ def delete_roles(gr):
         MATCH (r:Role)
         DETACH DELETE r
     ''')
-    tx.commit()
+    gr.commit(tx)
 
 
 def delete_users(gr):
@@ -20,7 +20,7 @@ def delete_users(gr):
         MATCH (u:User)
         DETACH DELETE u
     ''')
-    tx.commit()
+    gr.commit(tx)
 
 
 def delete_groups(gr):
@@ -30,7 +30,7 @@ def delete_groups(gr):
         MATCH (g:Group)
         DETACH DELETE g
     ''')
-    tx.commit()
+    gr.commit(tx)
 
 
 def delete_policy_nodes(gr, policies):
@@ -44,7 +44,7 @@ def delete_policy_nodes(gr, policies):
             DETACH DELETE res, a, p
         ''', parameters={'policyName': row.PolicyName, 'policyId': row.PolicyId})
 
-    tx.commit()
+    gr.commit(tx)
 
 
 def update_entities(gr, users, groups, roles):
@@ -92,7 +92,7 @@ def update_policy_node(gr, policies, new_policies):
                 delete_policy_nodes(gr, updated_row)
                 create_updated_policy_nodes(gr, updated_row)
 
-    tx.commit()
+    gr.commit(tx)
 
 
 # Compare the policies and return a new dataframe with updated policies that need to be changed in the graph

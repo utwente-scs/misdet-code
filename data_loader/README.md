@@ -8,10 +8,26 @@ We provide the following scripts:
 The scripts used for anomaly detection require the following Python libraries to be installed:
  * [pandas](https://pandas.pydata.org/)
  * [py2neo](https://py2neo.org/2021.1/)
+ * [tqdm](https://tqdm.github.io/)
 
 ```
-pip install pandas py2neo
+pip install pandas py2neo tqdm
 ```
+
+### Neo4j database
+Our code works with a Neo4j database including the Graph Data Science plugin.
+The most straightforward way of setting up such a database is with [docker](https://neo4j.com/developer/docker/):
+```
+docker run -p7474:7474 -p7687:7687 -e NEO4J_AUTH=neo4j/password --env NEO4JLABS_PLUGINS='["graph-data-science"]' neo4j
+```
+
+Note that in our code, we use the credentials:
+```
+username: neo4j
+password: password
+```
+In case you setup your own database using different credentials, please change the credentials in the code as well.
+The README.md files of each individual directory indicate which lines have to be changed.
 
 ## Usage
 
