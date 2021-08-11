@@ -157,8 +157,8 @@ def compare_policies(old_policies, new_policies):
 if __name__ == "__main__":
     graph = Graph("bolt://localhost:7687", user="neo4j", password="password")
 
-    df_policies, df_users, df_groups, df_roles = load_excel('./output/iam_policy_data_2021-04-02_12:19.xlsx')
-    new_df_policies, new_df_users, new_df_groups, new_df_roles = load_excel('./output/iam_policy_data_2021-04-02_13:12.xlsx')
+    df_policies, df_users, df_groups, df_roles = load_excel('../collector/example/iam_policy_data_2021-03-26_14:11.xlsx')
+    new_df_policies, new_df_users, new_df_groups, new_df_roles = load_excel('../collector/example/iam_policy_data_2021-03-26_14:11.xlsx')
 
     delete, add, difference = compare_policies(df_policies, new_df_policies)
 

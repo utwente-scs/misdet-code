@@ -371,8 +371,7 @@ if __name__ == "__main__":
     graph = Graph("bolt://localhost:7687", user="neo4j", password="password")
 
     # Load data from stored files
-    # df_policies, df_users, df_groups, df_roles = load_excel("./output/iam_policy_data_2021-04-09_10:15.xlsx")
-    df_policies, df_users, df_groups, df_roles = load_excel("../data/iam_policy_data_2021-05-12_11:03.xlsx")
+    df_policies, df_users, df_groups, df_roles = load_excel("../collector/example/iam_policy_data_2021-03-26_14:11.xlsx")
 
     # Create relevant nodes
     create_policy_nodes  (graph, df_policies)
