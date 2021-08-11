@@ -68,3 +68,28 @@ To change these inputs to custom files, please change the following lines in the
 df_policies, df_users, df_groups, df_roles = load_excel('./output/iam_policy_data_2021-04-02_12:19.xlsx')
 new_df_policies, new_df_users, new_df_groups, new_df_roles = load_excel('./output/iam_policy_data_2021-04-02_13:12.xlsx')
 ```
+
+### Graph embedding
+**Important**: To run any of the anomaly detection algorithms, we must create the graph embedding through the Neo4j database, otherwise we will miss some features.
+To create the graph embedding for each policy node, we run the following command on the Neo4j database:
+```
+CALL gds.beta.node2vec.write({
+  nodeProjection: "Policy",
+  relationshipProjection: {
+    contains: {
+      type: "CONTAINS",
+      orientation: "NATURAL"
+    },
+    works_on: {
+      type: "WORKS_ON",
+      orientation: "NATURAL"
+    }
+  },
+  embeddingDimension: 128,
+  iterations: 100,
+  walkLength: 5000,
+  writeProperty: "embeddingNode2vec"
+})
+```
+
+This command will create a variable `embeddingNode2vec` for each `Policy` node, which we will use during anomaly detection.

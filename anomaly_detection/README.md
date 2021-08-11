@@ -38,6 +38,32 @@ E.g.,
 python3 isolation_forest.py
 ```
 
+### Graph embedding
+**Important**: To run any of the anomaly detection algorithms, we must create the graph embedding through the Neo4j database (see the README.md file in the `data_loader/` directory), otherwise we will miss some features.
+To create the graph embedding for each policy node, we run the following command on the Neo4j database:
+```
+CALL gds.beta.node2vec.write({
+  nodeProjection: "Policy",
+  relationshipProjection: {
+    contains: {
+      type: "CONTAINS",
+      orientation: "NATURAL"
+    },
+    works_on: {
+      type: "WORKS_ON",
+      orientation: "NATURAL"
+    }
+  },
+  embeddingDimension: 128,
+  iterations: 100,
+  walkLength: 5000,
+  writeProperty: "embeddingNode2vec"
+})
+```
+
+This command will create a variable `embeddingNode2vec` for each `Policy` node, which we will use during anomaly detection.
+
+
 ### Connect to correct database instance
 Note that the scripts will attempt to connect to a Neo4j database instance.
 By default, we connect to the following instance, with the following credentials:

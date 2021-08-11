@@ -24,9 +24,6 @@ def retrieve_embeddings(driver):
             """,
         )
 
-        for record in result:
-            print(dict(record))
-
         # Transform retrieved data to a pandas dataframe and return
         return pd.DataFrame([dict(record) for record in result])
 
