@@ -87,9 +87,15 @@ pip install argformat neo4j numpy openpyxl pandas py2neo scikit-learn tqdm
 Please see the `README.md` files in each individual directory for instructions on how to use the separate artifacts.
 
 ## References
-[1] TODO
+[1] `Thijs van Ede, Niek Khasuntsev, Bas Steen, and Andrea Continella. 2022. Detecting Anomalous Misconfigurations in AWS Identity and Access Management Policies. In Proceedings of CCSW 2022.`
 
 ### Bibtex
 ```
-TODO
+@inproceedings{vanede2022misdet,
+  title={Detecting Anomalous Misconfigurations in AWS Identity and Access Management Policies},
+  author={van Ede, Thijs and Khasuntsev, Niek and Steen, Bas and Continella, Andrea},
+  booktitle={Proceedings of CCSW 2022},
+  year={2022},
+  organization={ACM}
+}
 ```
