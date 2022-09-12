@@ -4,7 +4,7 @@ Please [cite](#References) our work when using this code for academic publicatio
 
 ## Introduction
 Security misconfigurations are one of the biggest threats to cloud environments.
-In recent years, misconfigurations of cloud services have led to major security incidents and large scale data breaches.
+In recent years, misconfigurations of cloud services have led to major security incidents and large-scale data breaches.
 Proper configuration of identity and access management services is essential in maintaining a secure cloud environment.
 Due to the dynamic and complex nature of cloud environments, misconfigurations can be easily introduced and often go undetected for a long period of time.
 Therefore, it is critical to identify any potential misconfigurations before they can be abused.
@@ -13,7 +13,7 @@ In this work, we present a novel misconfiguration detection approach for identit
 We base our approach on the observation that policies can be modeled as permissions between entities and objects in the form of a graph.
 Our idea is that misconfigurations present overly permissive behaviors, which can be effectively detected as anomalies in such a graph representation.
 We evaluate our approach on real-world identity and access management policy data from three enterprise cloud environments.
-Our paper demonstrates its effectiveness to detect misconfigurations that has a slightly lower precision compared to rule-based systems, but is able to correctly detect between 3.7 and 6.4 times as many misconfigurations.
+Our paper demonstrates the effectiveness of our approach to detect misconfigurations, which has a slightly lower precision compared to rule-based systems, but is able to correctly detect between 3.7 and 6.4 times as many misconfigurations.
 
 ## Overview
 This repository consists of multiple python scripts that each have their own purpose, namely:
@@ -87,14 +87,16 @@ pip install argformat neo4j numpy openpyxl pandas py2neo scikit-learn tqdm
 Please see the `README.md` files in each individual directory for instructions on how to use the separate artifacts.
 
 ## References
-[1] `Thijs van Ede, Niek Khasuntsev, Bas Steen, and Andrea Continella. 2022. Detecting Anomalous Misconfigurations in AWS Identity and Access Management Policies. In Proceedings of CCSW 2022.`
+[1] **Detecting Anomalous Misconfigurations in AWS Identity and Access Management Policies**  
+Thijs van Ede, Niek Khasuntsev, Bas Steen, Andrea Continella.  
+*In Proceedings of the ACM Cloud Computing Security Workshop (CCSW), November 2022*
 
 ### Bibtex
 ```
 @inproceedings{vanede2022misdet,
   title={Detecting Anomalous Misconfigurations in AWS Identity and Access Management Policies},
   author={van Ede, Thijs and Khasuntsev, Niek and Steen, Bas and Continella, Andrea},
-  booktitle={Proceedings of CCSW 2022},
+  booktitle={Proceedings of the ACM Cloud Computing Security Workshop (CCSW)},
   year={2022},
   organization={ACM}
 }
